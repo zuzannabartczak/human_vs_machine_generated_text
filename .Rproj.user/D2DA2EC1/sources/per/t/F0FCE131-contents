@@ -1,0 +1,139 @@
+library(tidyverse)
+
+# Create a simple dataframe
+
+df <- data.frame(
+  Name = c("Alice", "Bob", "Charlie", "David"),
+  Age = c(25, 31, 23, 29),
+  Salary = c(50000, 60000, 55000, 52000)
+)
+print(df)
+str(df)
+
+# Basic dplyr functions: subset rows based on condition
+df %>% filter(Age > 25, Age < 30)
+new_df <- df %>%
+  filter(Age > 25) %>%
+  filter(Age < 30)
+
+# Basic dplyr functions: choose columns
+df %>% select(Name, Age)
+
+# Basic dplyr functions: add new columns
+df %>% mutate(Age_next_year = Age /
+                Salary)
+
+# Basic dplyr functions: sort rows
+df %>% arrange(desc(Salary))
+
+# Basic dplyr functions: aggregate data
+df %>% summarize(avg_age = mean(Age))
+
+# Basic dplyr functions: chain multiple operations together
+df %>%
+  filter(Age > 25) %>%
+  select(Name, Salary) %>%
+  arrange(desc(Salary))
+
+# ggplot
+
+# Basic scatter plot
+ggplot(data = df, aes(x = Age, y = Salary)) +
+  geom_point()
+
+# Add colors, themes, labels
+ggplot(data = df, aes(x = Age, y = Salary, color = Name)) +
+  geom_point(size = 3) +
+  labs(title = "Salary vs Age", x = "Age (years)", y = "Salary ($)")
+
+# Integrate wrangling and plotting
+df %>%
+  filter(Salary > 50000) %>%
+  ggplot(aes(x = Age, y = Salary, color = Name)) +
+  geom_point(size = 3) +
+  labs(title = "Salary > 50k vs Age", x = "Age (years)", y = "Salary ($)") +
+  theme_light()
+
+# Load packages
+library(dplyr)
+library(tidyverse)
+
+# Create Languages table
+Languages <- tibble(
+  language_id = 1:3,
+  language_name = c("English", "French", "Spanish"),
+  glottocode = c("engl1283", "fren1249", "span1326"),
+  language_family = c("Germanic", "Romance", "Romance"),
+  latitude = c(53.00, 48.00, 40.44),
+  longitude = c(-1.00, 2.00, -1.12)
+)
+
+# Create Concepts table
+Concepts <- tibble(
+  concept_id = 1:5,
+  concept_name = c("man", "woman", "child", "sun", "moon")
+)
+
+# Create Lexemes table
+Lexemes <- tibble(
+  lexeme_id = 1:15,
+  language_id = rep(1:3, each=5),
+  concept_id = rep(1:5, times=3),
+  lexeme = c("man", "woman", "child", "sun", "moon",
+             "homme", "femme", "enfant", "soleil", "lune",
+             "hombre", "mujer", "niño", "sol", "luna")
+)
+
+# Select operation: Extract all lexemes from the English language.
+
+English_lexemes <- Lexemes %>%
+  filter(language_id == 1) %>%
+  select(lexeme)
+
+
+# Select operation: Extract all concepts that start with 'm'.
+
+m_concepts <- Concepts %>%
+  filter(str_starts(concept_name, "m")) %>%
+  select(concept_name)
+
+# Primary and foreign keys: Identify the primary keys for each table.
+
+# Primary and foreign keys: Which columns in the Lexemes table are foreign keys?
+
+# Join operations: Join the Languages and Lexemes tables to get a table showing lexemes with their respective language names.
+
+language_lexeme_join <- Lexemes %>%
+  inner_join(Languages, by = "language_id") %>%
+  select(language_name, lexeme)
+
+# Join operations: Join the Lexemes and Concepts tables to get a table displaying each lexeme with its corresponding concept name.
+
+lexeme_concept_join <- Lexemes %>%
+  inner_join(Concepts, by = "concept_id") %>%
+  select(lexeme, concept_name)
+
+# Join operations: Join all three tables to get a table displaying lexeme, concept name, and language name.
+
+all_join <- Lexemes %>%
+  inner_join(Languages, by = "language_id") %>%
+  inner_join(Concepts, by = "concept_id") %>%
+  select(lexeme, concept_name, language_name)
+
+# Join operation: left join
+
+Lexemes <- Lexemes %>%
+  filter(!(language_id == 3 & concept_id %in% c(4, 5)))
+
+all_combinations <- expand.grid(language_id = Languages$language_id, concept_id = Concepts$concept_id)
+
+language_lexeme_left_join <- all_combinations %>%
+  left_join(Lexemes, by = c("language_id", "concept_id")) %>%
+  left_join(Languages, by = "language_id") %>%
+  left_join(Concepts, by = "concept_id") %>%
+  select(language_name, concept_name, lexeme)
+
+# Filter to see results for Spanish
+missing_spanish_lexemes <- language_lexeme_left_join %>%
+  filter(language_name == "Spanish" & is.na(lexeme))
+
