@@ -3,6 +3,7 @@ library(dplyr)
 library(nortest)
 library(jsonlite)
 library(tidyverse)
+library(pROC)
 
 
 #Load data
@@ -94,33 +95,6 @@ if (ad_test$p.value > 0.05) {
 }
 
 
-# Print the mean and standard deviation for the SGD model
-cat("SGD model:\n")
-cat("Mean:", sgd_lc$train_scores_mean, "\n")
-cat("Standard deviation:", sgd_lc$train_scores_std, "\n")
-
-# Print the mean and standard deviation for the RNN model
-cat("RNN model:\n")
-cat("Mean:", rnn_mean, "\n")
-cat("Standard deviation:", rnn_std, "\n")
-
-
-
-# Test for statistical significance using the Mann-Whitney U test (between training and test or sgd and rnn??)
-wilcox_test <- wilcox.test(rnn_data, sgd_data)
-
-# Print the test statistic and p-value
-cat("Mann-Whitney U test statistic:", wilcox_test$statistic, "\n")
-cat("p-value:", wilcox_test$p.value, "\n")
-
-# Interpret the results
-if (wilcox_test$p.value > 0.05) {
-    cat("There is no significant difference between the RNN and SGD models.\n")
-} else {
-    cat("There is a significant difference between the RNN and SGD models.\n")
-}
-
-
 names(sgd_lc) <- c("TrainSize", "TrainScore", "TestScore", "TrainStdDev", "TestStdDev")
 
 # Plot the learning curve
@@ -136,18 +110,24 @@ ggplot(sgd_lc, aes(TrainSize)) +
 
 
 
+
+
+# Plot the ROC curve
+roc_obj <- roc(dev_data$label, sgd_pred$label)
+
+plot(roc_obj, main="ROC Curve")
+abline(a=0, b=1, lty=2, col="gray") 
+
+
+
 # Plot weights
-ggplot(sgd_weights, aes(x = word, y = weight)) +
-    geom_bar(stat = 'identity') +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    labs(title = "Feature Weights", x = "Feature", y = "Weight")
+sgd_weights <- sgd_weights %>% 
+    mutate(word = rownames(sgd_weights)) %>% 
+    arrange(desc(abs(weight))) %>% 
+    head(10)
 
 
-# Plot the feature importance
-ggplot(df, aes(x = reorder(Feature, Importance), y = Importance)) +
-    geom_bar(stat = 'identity') +
-    coord_flip() +
-    labs(title = "Feature Importance", x = "Feature", y = "Importance")
+
 
 # Define the confusion matrix
 cm1 <- matrix(c(12198, 298, 7590, 3866), nrow = 2, byrow = TRUE)
